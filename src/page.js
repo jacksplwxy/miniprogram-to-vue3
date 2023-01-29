@@ -56,9 +56,7 @@ function isDirectory(path) {
   return false;
 }
 
-const inputPath =
-  process.argv[2] ||
-  "D:/jacksplwxy/git/miniprogram-to-vue3/examples/minipro2uniapp/weapp-wechat-zhihu-master/app.json";
+const inputPath = process.argv[2];
 // 执行翻译程序
 if (isDirectory(inputPath)) {
   generateVue3(inputPath).then((targetCode, filePath) => {
