@@ -1,10 +1,10 @@
 # miniprogram-to-vue3
 
-将各类小程序源码转换为 vue3/uniapp3 源码
+将各类小程序源码转换为 vue3/uniapp3（Vue3/Vite版） 源码
 
 ## 背景：
 
-随着 vue3 的发布，vue 相关前端项目都有升级需求，其中的一块内容是小程序的升级，例如小程序转码为 vue3、小程序转码为 uniapp3，相关工作量无疑是巨大的，而这些枯燥且易出错的业务代码升级很大程度上可以通过工具来实现，保障项目能跟进前端生态的发展
+随着 vue3 的发布，vue 相关前端项目都有升级需求，其中的一块内容是小程序的升级，例如小程序转码为 vue3、小程序转码为 uniapp3（Vue3/Vite版），相关工作量无疑是巨大的，而这些枯燥且易出错的业务代码升级很大程度上可以通过工具来实现，保障项目能跟进前端生态的发展
 
 ## 使用：
 
@@ -106,10 +106,10 @@ onShareAppMessage(function (res) {});
 - 由于工具的不完善，在转换前需要做一些手工操作：
 - 1、在网上找到知乎微信小程序源码并下载下来，作为待转换的项目：https://github.com/RebeccaHanjw/weapp-wechat-zhihu
 - 2、使用 npx degit dcloudio/uni-preset-vue#vite my-vue3-project 命令创建 Vue3/Vite 版 uniapp 模板（node 版本^14.18.0）
-- 3、为保证转换效果一致性，需将小程序的一些公用文件复制到 uniapp 目录下，例如小程序的 utils、images、data 文件夹复制到 uniapp 的 src 文件夹中。另外，由于 vite 不支持 commonjs，需要将小程序的 commonjs 转换为 es 模块，可以通过本工具的命令行对文件夹下的 js 文件进行模块转换：npm run build:js D:/miniprogram-to-vue3/examples/minipro2uniapp/uniapp/src/data。
+- 3、为保证转换效果一致性，需将小程序的一些公用文件复制到 uniapp 目录下，例如小程序的app.wxss复制到uniapp中，并在main.js进行全局import引入，例如小程序的 utils、images、data 文件夹复制到 uniapp 的 src 文件夹中。另外，由于 vite 不支持 commonjs，需要将小程序的 commonjs 转换为 es 模块，可以通过本工具的命令行对文件夹下的 js 文件进行模块转换：npm run build:js D:/miniprogram-to-vue3/examples/minipro2uniapp/uniapp/src/data。
 - 4、执行转换小程序页面为 vue3 文件的命令行 npm run build D:/miniprogram-to-vue3/examples/minipro2uniapp/weapp-wechat-zhihu-master/pages/index/index，并生成 index.vue 文件
-- 5、将生成.vue 文件剪切到 uniapp 中，运行 uni 项目后即可看到生成的页面与微信小程序中保持一致（如果有样式问题，注意引入小程序的 app.wxss 中的公共样式）。
-- 6、其他页面的转换与 5 一致即可
+- 5、将生成.vue 文件剪切到 uniapp 中，运行 uni 项目后即可看到生成的页面与微信小程序中保持一致。
+- 6、其他页面的转换与 5 一致即可（也可npm run build app.json路径进行多页面转换）
 
 ## 具体做了哪些转换？
 

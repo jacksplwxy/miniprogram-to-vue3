@@ -89,9 +89,6 @@ function bindHideKeyboard(e) {
 }
 </script>
 <style>
-@import url('../../app.css');
-</style>
-<style>
 .chat-item{
   width: 725rpx;
   background: #ffffff;

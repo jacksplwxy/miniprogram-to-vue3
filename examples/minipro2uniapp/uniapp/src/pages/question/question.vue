@@ -260,9 +260,6 @@ function tapName(event) {
 let app = getApp();
 </script>
 <style>
-@import url('../../app.css');
-</style>
-<style>
 /**answer.wxss**/
 
 .answer-feed {

@@ -157,9 +157,6 @@ function nextLoad() {
 let app = getApp();
 </script>
 <style>
-@import url('../../app.css');
-</style>
-<style>
 /**index.wxss**/
 
 .container{

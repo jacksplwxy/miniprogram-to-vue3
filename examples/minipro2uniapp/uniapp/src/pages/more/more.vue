@@ -104,9 +104,6 @@ onLoad(function () {
 let app = getApp();
 </script>
 <style>
-@import url('../../app.css');
-</style>
-<style>
 .user {
   width: 725rpx;
   background: #ffffff;

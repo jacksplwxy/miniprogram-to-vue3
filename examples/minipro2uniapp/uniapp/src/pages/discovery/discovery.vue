@@ -147,9 +147,6 @@ function nextLoad() {
 let util = _utilsUtilJs;
 </script>
 <style>
-@import url('../../app.css');
-</style>
-<style>
 .container{
   height: 1500rpx;
 }

@@ -104,9 +104,6 @@ function switchTab(e) {
 let util = _utilsUtilJs;
 </script>
 <style>
-@import url('../../app.css');
-</style>
-<style>
 .unread{
   color: #9A9C9B;
   height: 60rpx;
