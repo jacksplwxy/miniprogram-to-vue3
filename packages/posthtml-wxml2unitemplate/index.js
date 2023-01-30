@@ -5,6 +5,7 @@ const generator = require("@babel/generator").default;
 const lodash = require("lodash");
 const event = require("./event");
 const { getPageTypeInstancePath } = require("../common/utils-busi/traverse");
+const { config } = require("../config/base");
 
 // js的state数据列表
 let stateDataArr = [];
@@ -155,9 +156,7 @@ function attrsTransform(attrs, options = {}) {
 
 // 属性双大括号表达式转换
 function attrsMustacheTransform(value, options = {}) {
-  let defualtOptions = {
-    stateName: "state",
-  };
+  let defualtOptions = {};
   options = Object.assign(defualtOptions, options);
   let str = value.replace(/'/g, '"').replace(/{{.*?}}/g, (word) => {
     return word.replace(/"/g, "'");
@@ -171,7 +170,10 @@ function attrsMustacheTransform(value, options = {}) {
         path.key !== "property" &&
         stateDataArr.indexOf(path.node.name) > -1
       ) {
-        let newNode = createMemberExpression(options.stateName, path.node.name);
+        let newNode = createMemberExpression(
+          config.stateKeyWord,
+          path.node.name
+        );
         path.replaceWith(newNode);
         path.skip();
       }
@@ -206,9 +208,7 @@ function contentTransform(content, options = {}) {
 
 // 内容大括号表达式转换
 function contentMustacheTransform(content, options = {}) {
-  let defualtOptions = {
-    stateName: "state",
-  };
+  let defualtOptions = {};
   options = Object.assign(defualtOptions, options);
   content = content.replace(/^({{)|(}})$/g, "");
   const ast = jsParser.parse(content);
@@ -219,7 +219,10 @@ function contentMustacheTransform(content, options = {}) {
         path.key !== "property" &&
         stateDataArr.indexOf(path.node.name) > -1
       ) {
-        let newNode = createMemberExpression(options.stateName, path.node.name);
+        let newNode = createMemberExpression(
+          config.stateKeyWord,
+          path.node.name
+        );
         path.replaceWith(newNode);
         path.skip();
       }
@@ -251,7 +254,8 @@ function getStateDataFromJsCode(jsSourceCode) {
             let item = nodePath.node;
             if (item.value.type === "ObjectExpression") {
               let name = item.key.name || item.key.value;
-              if (name === "data") {
+              const KeyWord = "data";
+              if (name === KeyWord) {
                 result = item.value.properties.map((innerItem) => {
                   return innerItem.key.name;
                 });

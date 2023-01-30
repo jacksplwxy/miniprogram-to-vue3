@@ -1,5 +1,6 @@
 const { declare } = require("@babel/helper-plugin-utils");
 const t = require("@babel/types");
+const { config } = require("../config/base");
 const { getPageTypeInstancePath } = require("../common/utils-busi/traverse");
 // 一、将Page 选项中的方法转换为function方法，对于指定方法，有固定转换关系；
 // 二、方法的调用需消除this
@@ -11,9 +12,7 @@ const { getPageTypeInstancePath } = require("../common/utils-busi/traverse");
 const plugin = declare((api, options = {}, dirname) => {
   api.assertVersion(7);
   // 默认配置项
-  let DefaultOptions = {
-    stateKeyWord: "state",
-  };
+  let DefaultOptions = {};
 
   options = Object.assign(DefaultOptions, options);
 
@@ -45,11 +44,6 @@ const plugin = declare((api, options = {}, dirname) => {
     onResize: "EVENT", //页面尺寸改变时触发，详见 响应显示区域变化
     onTabItemTap: "EVENT", //当前是 tab 页时，点击 tab 时触发
     onSaveExitState: "EVENT", //页面销毁前保留状态回调
-  };
-
-  //特殊关键词的转换映射关系表
-  const KeyWordMap = {
-    wx: "uni",
   };
 
   // 创建ImportDeclaration，例如：import { onShow, onLoad, onUnload } from '@dcloudio/uni-app'
@@ -94,37 +88,18 @@ const plugin = declare((api, options = {}, dirname) => {
   function renameDeclarationKeyWord(path) {
     let newBindingList = {};
     //配置项关键词
-    newBindingList[options.stateKeyWord] = true;
+    newBindingList[config.stateKeyWord] = true;
     // Page参数类型
     for (let key in PageParamType) {
       newBindingList[key] = true;
     }
     //特殊关键词（包括映射后的）
-    for (let key in KeyWordMap) {
+    for (let key in config.globalsMap) {
       newBindingList[key] = true;
-      newBindingList[KeyWordMap[key]] = true;
+      newBindingList[config.globalsMap[key]] = true;
     }
     // 声明重命名
     setScopeBindingUnique(path.scope, newBindingList);
-    // path.traverse({
-    //   Declaration(declPath) {
-    //     declPath.traverse({
-    //       Identifier(identPath) {
-    //         let identName = identPath.node.name;
-    //         if (newBindingList[identName]) {
-    //           identPath.scope.rename(
-    //             identName,
-    //             geneUniqNameBaseonList(
-    //               identPath.scope,
-    //               newBindingList,
-    //               identName
-    //             )
-    //           );
-    //         }
-    //       },
-    //     });
-    //   },
-    // });
   }
 
   // 将全局作用域中冲突的已有的申明进行重新命名，为Page参数转换为组合API腾出标识符
@@ -143,9 +118,9 @@ const plugin = declare((api, options = {}, dirname) => {
         if (
           identPath.key === "object" &&
           identPath.parentPath.isMemberExpression() &&
-          KeyWordMap[identPath.node.name]
+          config.globalsMap[identPath.node.name]
         ) {
-          identPath.node.name = KeyWordMap[identPath.node.name];
+          identPath.node.name = config.globalsMap[identPath.node.name];
         }
       },
     });
@@ -186,7 +161,7 @@ const plugin = declare((api, options = {}, dirname) => {
   function creatReactive(t, objectExpression) {
     return t.variableDeclaration("const", [
       t.VariableDeclarator(
-        t.Identifier(options.stateKeyWord),
+        t.Identifier(config.stateKeyWord),
         t.CallExpression(t.Identifier("reactive"), [objectExpression])
       ),
     ]);
@@ -408,7 +383,7 @@ const plugin = declare((api, options = {}, dirname) => {
   function removeLikeThis(thisPath) {
     // 将原来作用域中冲突的申明重命名
     let newBindingListKey = thisPath.getSibling("property").node.name;
-    if (newBindingListKey !== options.stateKeyWord) {
+    if (newBindingListKey !== config.stateKeyWord) {
       let newBindingList = {};
       newBindingList[newBindingListKey] = true;
       setScopeBindingUnique(thisPath.scope, newBindingList);
@@ -423,7 +398,7 @@ const plugin = declare((api, options = {}, dirname) => {
       let identifierName = thisPath.parentPath.get("property").node.name;
       // 处理this.data.xxx
       if (PageParamType[identifierName] === "DATA") {
-        thisPath.parentPath.replaceWith(t.Identifier(options.stateKeyWord));
+        thisPath.parentPath.replaceWith(t.Identifier(config.stateKeyWord));
       }
       // 处理this.setData
       else if (
@@ -464,7 +439,7 @@ const plugin = declare((api, options = {}, dirname) => {
           t.assignmentExpression(
             "=",
             t.memberExpression(
-              t.identifier(options.stateKeyWord),
+              t.identifier(config.stateKeyWord),
               t.identifier(
                 objectPropertyPath.get("key").node.name ||
                   objectPropertyPath.get("key").node.value
