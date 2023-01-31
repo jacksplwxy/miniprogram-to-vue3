@@ -15,12 +15,6 @@ const {
   transSetData,
   transFnCallThisExpression,
 } = require("../common/utils-busi/traverse");
-// 一、将Page 选项中的方法转换为function方法，对于指定方法，有固定转换关系；
-// 二、方法的调用需消除this
-// 三、将data数据转换为reactive数据：
-// 1、确定reactive对象名，默认为state
-// 2、判断当前作用域中是否存在state变量名，若存在则改名为一个唯一变量名
-// 3、创建一个变量state接收reactive对象
 
 const plugin = declare((api, options = {}, dirname) => {
   api.assertVersion(7);
@@ -30,38 +24,39 @@ const plugin = declare((api, options = {}, dirname) => {
   options = Object.assign(DefaultOptions, options);
 
   /**
-   * Page参数类型：https://developers.weixin.qq.com/miniprogram/dev/reference/api/Page.html
-   * 类型分类：根据类型，将数据转换为能够适应vue3 setup的不同形式
+   * Component参数类型：https://developers.weixin.qq.com/miniprogram/dev/reference/api/Component.html
+   * 类型分类：根据类型，将数据转换为能够适应vue3 setup的不同形式:
+   * 类型DATA：转换为reactive
+   * 类型LIFECYCLE:转换执行函数
+   * 类型EVENT:转换执行函数
+   * 类型OTHER：本人暂不清楚转换目标，默认转到function声明
    */
-  const PageParamType = {
-    data: "REACTIVE", //页面的初始数据
-    // setData: "SETDATA", //更新页面数据（在this转换中进行处理）
-    options: "OPTIONS", //页面的组件选项，同 Component 构造器 中的 options ，需要基础库版本 2.10.1
-    behaviors: "MIXINS", //类似于 mixins 和traits的组件间代码复用机制，参见 behaviors，需要基础库版本 2.9.2
-    onLoad: "CALLFN", //生命周期回调—监听页面加载
-    onShow: "CALLFN", //生命周期回调—监听页面显示
-    onReady: "CALLFN", //生命周期回调—监听页面初次渲染完成
-    onHide: "CALLFN", //生命周期回调—监听页面隐藏
-    onUnload: "CALLFN", //生命周期回调—监听页面卸载
-    onPullDownRefresh: "CALLFN", //监听用户下拉动作
-    onReachBottom: "CALLFN", //页面上拉触底事件的处理函数
-    onShareAppMessage: "CALLFN", //用户点击右上角转发
-    onShareTimeline: "CALLFN", //用户点击右上角转发到朋友圈
-    onAddToFavorites: "CALLFN", //用户点击右上角收藏
-    onPageScroll: "CALLFN", //页面滚动触发事件的处理函数
-    onResize: "CALLFN", //页面尺寸改变时触发，详见 响应显示区域变化
-    onTabItemTap: "CALLFN", //当前是 tab 页时，点击 tab 时触发
-    onSaveExitState: "CALLFN", //页面销毁前保留状态回调
+  const ComponentParamType = {
+    properties: "PROPERTIES",
+    data: "REACTIVE",
+    observers: "WATCH",
+    methods: "METHODS",
+    behaviors: "MIXINS",
+    created: "CALLFN",
+    attached: "CALLFN",
+    ready: "CALLFN",
+    moved: "CALLFN",
+    detached: "CALLFN",
+    relations: "RELATIONS",
+    externalClasses: "EXTERNALCLASSES",
+    options: "OPTIONS",
+    lifetimes: "LIFETIMES",
+    pageLifetimes: "PAGELIFETIMES",
   };
 
-  // 如果作用域中存在对关键词（配置项关键词、Page参数、全局对象关键词（包括映射后的））的声明，则重命名这些声明，避免与关键词冲突
+  // 如果作用域中存在对关键词（配置项关键词、Component参数、全局对象关键词（包括映射后的））的声明，则重命名这些声明，避免与关键词冲突
   function renameDeclarationKeyWord(path) {
     // 关键词集合
     let newBindingList = {};
     // 收集关键词：配置项关键词
     newBindingList[config.stateKeyWord] = true;
     // 收集关键词：Page参数类型
-    for (let key in PageParamType) {
+    for (let key in ComponentParamType) {
       newBindingList[key] = true;
     }
     // 收集关键词：全局对象关键词（包括映射后的）
@@ -86,7 +81,7 @@ const plugin = declare((api, options = {}, dirname) => {
       let item = nodePath.node;
       // 处理Page({test(){}})
       if (nodePath.isObjectMethod()) {
-        if (PageParamType[item.key.name] === "CALLFN") {
+        if (ComponentParamType[item.key.name] === "CALLFN") {
           pageParamDependArr.push(item.key.name);
           const newNode = createFnCallExpressionStatement(
             t.identifier(generateUid(scope, item.key.name)),
@@ -117,7 +112,7 @@ const plugin = declare((api, options = {}, dirname) => {
         // ObjectProperty的key可能是Identifier | Literal
         let name = item.key.name || item.key.value;
         if (item.value.type === "FunctionExpression") {
-          if (PageParamType[name] === "CALLFN") {
+          if (ComponentParamType[name] === "CALLFN") {
             pageParamDependArr.push(item.key.name);
             const newNode = createFnCallExpressionStatement(
               t.identifier(generateUid(scope, name)),
@@ -144,7 +139,7 @@ const plugin = declare((api, options = {}, dirname) => {
         }
         // 处理Page({test:()=>{}})
         else if (item.value.type === "ArrowFunctionExpression") {
-          if (PageParamType[name] === "CALLFN") {
+          if (ComponentParamType[name] === "CALLFN") {
             pageParamDependArr.push(item.key.name);
             const newNode = createFnCallExpressionStatement(
               t.identifier(generateUid(scope, name)),
@@ -173,7 +168,7 @@ const plugin = declare((api, options = {}, dirname) => {
         // 处理Page({data:{}})
         else if (item.value.type === "ObjectExpression") {
           // 处理data数据
-          if (PageParamType[name] === "REACTIVE") {
+          if (ComponentParamType[name] === "REACTIVE") {
             // 引入依赖
             let program = scope.getProgramParent().path;
             let dependency = createImportDeclaration(["reactive"], "vue");
@@ -223,24 +218,27 @@ const plugin = declare((api, options = {}, dirname) => {
       Program: {
         enter(programPath) {
           // 获取Page入参对象的path
-          let pageInstancePath = getPageTypeInstancePath(programPath, "Page");
-          if (!pageInstancePath) {
-            throw new Error("get Page instance error");
+          let componentInstancePath = getPageTypeInstancePath(
+            programPath,
+            "Component"
+          );
+          if (!componentInstancePath) {
+            throw new Error("get Component instance error");
           }
           // 将全局作用域中冲突的已有的申明进行重新命名，为关键词转换为组合API腾出标识符
           renameDeclarationKeyWord(programPath);
           // 将全局作用域中已有的申明进行重新命名，为Page参数转换为组合API腾出标识符
-          renameDeclarationPageParam(programPath, pageInstancePath);
+          renameDeclarationPageParam(programPath, componentInstancePath);
           // 转换全局对象关键词
           transGlobalsMap(programPath);
           // 处理this表达式
-          transFnCallThisExpression(pageInstancePath);
-          // 将Page的对象API转换为funciton组合API
+          transFnCallThisExpression(componentInstancePath);
+          // 将Component的对象API转换为funciton组合API
           let newNodeArr = transOptions2Composition(
-            pageInstancePath,
+            componentInstancePath,
             programPath.scope
           );
-          pageInstancePath.parentPath.parentPath.replaceWithMultiple(
+          componentInstancePath.parentPath.parentPath.replaceWithMultiple(
             newNodeArr
           );
         },

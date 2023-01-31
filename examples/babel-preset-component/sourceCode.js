@@ -11,7 +11,7 @@ function toastHidden(){
   state4(toastHidden)
 }
 
-Page(
+Component(
   {
   data: {
     toastShow: true,

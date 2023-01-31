@@ -1,4 +1,3 @@
-import { onShow, onHide, onShareAppMessage } from "@dcloudio/uni-app";
 import { reactive } from "vue";
 import state5 from '././state';
 import { state6 } from '';
@@ -63,18 +62,18 @@ function toastHidden() {
     }
   }
 }
-onShow(function () {
+function onShow() {
   toastHidden();
   console.log(_state);
-});
-onHide(res => {
+}
+let onHide = res => {
   console.log(res);
-});
+};
 function gotoRank() {
   uni.navigateTo({
     url: '../rank/rank'
   });
 }
-onShareAppMessage(function (res) {
+function onShareAppMessage(res) {
   console.log(123);
-});
+}
