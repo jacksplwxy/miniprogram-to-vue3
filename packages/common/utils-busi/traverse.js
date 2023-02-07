@@ -176,11 +176,21 @@ function generateUid(scope, name) {
 }
 
 // 根据一个对象创建reactive
-function creatReactive(t, objectExpression) {
+function creatReactive(objectExpression) {
   return t.variableDeclaration("const", [
     t.VariableDeclarator(
       t.Identifier(config.stateKeyWord),
       t.CallExpression(t.Identifier("reactive"), [objectExpression])
+    ),
+  ]);
+}
+
+// 根据一个对象创建defineProps
+function creatDefineProps(objectExpression) {
+  return t.variableDeclaration("const", [
+    t.VariableDeclarator(
+      t.Identifier(config.propsKeyWord),
+      t.CallExpression(t.Identifier("defineProps"), [objectExpression])
     ),
   ]);
 }
@@ -231,7 +241,7 @@ function transSetData(callExpression) {
   return newNodeArr;
 }
 
-// 转换方法调用入参的this表达式为函数申明
+// 转换方法调用入参的this表达式为函数申明（包含了this.setData的处理）
 function transFnCallThisExpression(path) {
   path.traverse({
     ThisExpression(thisPath) {
@@ -325,6 +335,7 @@ module.exports = {
   geneUniqNameBaseonList,
   generateUid,
   creatReactive,
+  creatDefineProps,
   pathFatherScopeIsPro,
   transSetData,
   transFnCallThisExpression,

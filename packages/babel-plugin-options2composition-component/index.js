@@ -11,6 +11,7 @@ const {
   geneUniqNameBaseonList,
   generateUid,
   creatReactive,
+  creatDefineProps,
   pathFatherScopeIsPro,
   transSetData,
   transFnCallThisExpression,
@@ -32,7 +33,7 @@ const plugin = declare((api, options = {}, dirname) => {
    * 类型OTHER：本人暂不清楚转换目标，默认转到function声明
    */
   const ComponentParamType = {
-    properties: "PROPERTIES",
+    properties: "PROPS",
     data: "REACTIVE",
     observers: "WATCH",
     methods: "METHODS",
@@ -55,7 +56,8 @@ const plugin = declare((api, options = {}, dirname) => {
     let newBindingList = {};
     // 收集关键词：配置项关键词
     newBindingList[config.stateKeyWord] = true;
-    // 收集关键词：Page参数类型
+    newBindingList[config.propsKeyWord] = true;
+    // 收集关键词：Component参数类型
     for (let key in ComponentParamType) {
       newBindingList[key] = true;
     }
@@ -68,6 +70,83 @@ const plugin = declare((api, options = {}, dirname) => {
     setScopeBindingUnique(path.scope, newBindingList);
   }
 
+  // 将小程序props转换vue3格式
+  function transProps(objectExpressionPath) {
+    let propertiesPath = objectExpressionPath.get("properties");
+    propertiesPath = propertiesPath.map((objectPropertyPath) => {
+      let optionalTypesArr = [];
+      objectPropertyPath
+        .get("value")
+        .get("properties")
+        .forEach((itemPath) => {
+          const optionalTypesKeyWord = "optionalTypes";
+          const observerKeyWord = "observer";
+          // 存在optionalTypes
+          if (itemPath.get("key").node.name === optionalTypesKeyWord) {
+            // 将多个类型合并到type中
+            optionalTypesArr = itemPath.get("value").get("elements");
+            objectPropertyPath
+              .get("value")
+              .get("properties")
+              .some((itemPathInner) => {
+                const typeKeyWord = "type";
+                if (itemPathInner.get("key").node.name === typeKeyWord) {
+                  optionalTypesArr.push(itemPathInner.get("value"));
+                  itemPathInner.get("value").replaceWith(
+                    t.arrayExpression(
+                      optionalTypesArr.map((item) => {
+                        return item.node;
+                      })
+                    )
+                  );
+                  return true;
+                }
+              });
+            itemPath.remove();
+            return true;
+          }
+          //如果存在observer
+          else if (itemPath.get("key").node.name === observerKeyWord) {
+            console.log("暂不支持properties的observer属性转换，请手工移入watch监听器中");
+          }
+        });
+
+      return objectPropertyPath;
+    });
+    let properties = propertiesPath.map((item) => {
+      return item.node;
+    });
+    return t.objectExpression(properties);
+  }
+
+   // 将小程序Observers转换vue3格式
+  function transObservers(objectExpressionPath){
+    let newNodes=[]
+    //将xx(){} → watch([name, age],([name, age])=>{})
+    let propertiesPath = objectExpressionPath.get("properties");
+    propertiesPath.forEach(objectPropertyPath=>{
+      const watchKeyWord='watch'
+      let arguments = []
+      let argument1=t.arrayExpression(objectPropertyPath.get('key').node.value.split(',').map(name=>{
+        return t.identifier(name)
+      }));
+      arguments.push(argument1)
+      let argument2
+      if(objectPropertyPath.isObjectProperty()){
+        argument2=objectPropertyPath.get('value').node
+      }else if(objectPropertyPath.isObjectMethod()){
+        let node=objectPropertyPath.node
+        argument2=t.functionExpression(t.identifier(node.key.value),node.params, node.body, node.generator, node.async);
+      }else{
+        console.log('此处存在未处理的情况',objectPropertyPath)
+      }
+      arguments.push(argument2)
+      let fnCallExpStmt=t.expressionStatement(t.callExpression(t.identifier(watchKeyWord), arguments))
+      newNodes.push(fnCallExpStmt)
+    })
+    return newNodes
+  }
+
   /**
    * 将option选项API转换为composition组合API
    * @param {*} ObjectExpressionPath
@@ -76,13 +155,13 @@ const plugin = declare((api, options = {}, dirname) => {
    */
   function transOptions2Composition(ObjectExpressionPath, scope) {
     let newNodeArr = [];
-    let pageParamDependArr = [];
+    let componentParamDependArr = [];
     ObjectExpressionPath.get("properties").forEach((nodePath) => {
       let item = nodePath.node;
-      // 处理Page({test(){}})
+      // 处理Component({test(){}})
       if (nodePath.isObjectMethod()) {
         if (ComponentParamType[item.key.name] === "CALLFN") {
-          pageParamDependArr.push(item.key.name);
+          componentParamDependArr.push(item.key.name);
           const newNode = createFnCallExpressionStatement(
             t.identifier(generateUid(scope, item.key.name)),
             {
@@ -106,14 +185,14 @@ const plugin = declare((api, options = {}, dirname) => {
           newNodeArr.push(newNode);
         }
       }
-      // 处理Page({test:xxx})
+      // 处理Component({test:xxx})
       else if (nodePath.isObjectProperty()) {
-        // 处理Page({test: function () {}})
+        // 处理Component({test: function () {}})
         // ObjectProperty的key可能是Identifier | Literal
         let name = item.key.name || item.key.value;
         if (item.value.type === "FunctionExpression") {
           if (ComponentParamType[name] === "CALLFN") {
-            pageParamDependArr.push(item.key.name);
+            componentParamDependArr.push(item.key.name);
             const newNode = createFnCallExpressionStatement(
               t.identifier(generateUid(scope, name)),
               {
@@ -137,10 +216,10 @@ const plugin = declare((api, options = {}, dirname) => {
             newNodeArr.push(newNode);
           }
         }
-        // 处理Page({test:()=>{}})
+        // 处理Component({test:()=>{}})
         else if (item.value.type === "ArrowFunctionExpression") {
           if (ComponentParamType[name] === "CALLFN") {
-            pageParamDependArr.push(item.key.name);
+            componentParamDependArr.push(item.key.name);
             const newNode = createFnCallExpressionStatement(
               t.identifier(generateUid(scope, name)),
               {
@@ -165,7 +244,7 @@ const plugin = declare((api, options = {}, dirname) => {
             newNodeArr.push(newNode);
           }
         }
-        // 处理Page({data:{}})
+        // 处理Component({data:{}})
         else if (item.value.type === "ObjectExpression") {
           // 处理data数据
           if (ComponentParamType[name] === "REACTIVE") {
@@ -174,10 +253,22 @@ const plugin = declare((api, options = {}, dirname) => {
             let dependency = createImportDeclaration(["reactive"], "vue");
             program.node.body.unshift(dependency);
             // 创建reactive
-            let reactiveNode = creatReactive(t, item.value);
+            let reactiveNode = creatReactive(item.value);
             newNodeArr.unshift(reactiveNode);
           }
-          // 处理Page({test:any})
+          // 处理Component({properties:{}})
+          else if (ComponentParamType[name] === "PROPS") {
+            // 创建defineProps
+            let newNode = transProps(nodePath.get("value"));
+            let propsNode = creatDefineProps(newNode);
+            newNodeArr.push(propsNode);
+          }
+          // 处理Component({observers:{}})
+          else if (ComponentParamType[name] === "WATCH") {
+            let newNode = transObservers(nodePath.get("value"));
+            newNodeArr.push(...newNode);
+          }
+          // 处理Component({test:any})
           else {
             let newNode = t.variableDeclaration("let", [
               t.VariableDeclarator(
@@ -201,10 +292,10 @@ const plugin = declare((api, options = {}, dirname) => {
       }
     });
     // 引入依赖
-    if (pageParamDependArr.length > 0) {
+    if (componentParamDependArr.length > 0) {
       let program = scope.getProgramParent().path;
       let dependency = createImportDeclaration(
-        pageParamDependArr,
+        componentParamDependArr,
         "@dcloudio/uni-app"
       );
       program.node.body.unshift(dependency);
@@ -217,7 +308,7 @@ const plugin = declare((api, options = {}, dirname) => {
     visitor: {
       Program: {
         enter(programPath) {
-          // 获取Page入参对象的path
+          // 获取Component入参对象的path
           let componentInstancePath = getPageTypeInstancePath(
             programPath,
             "Component"
@@ -227,11 +318,11 @@ const plugin = declare((api, options = {}, dirname) => {
           }
           // 将全局作用域中冲突的已有的申明进行重新命名，为关键词转换为组合API腾出标识符
           renameDeclarationKeyWord(programPath);
-          // 将全局作用域中已有的申明进行重新命名，为Page参数转换为组合API腾出标识符
+          // 将全局作用域中已有的申明进行重新命名，为Component参数转换为组合API腾出标识符
           renameDeclarationPageParam(programPath, componentInstancePath);
           // 转换全局对象关键词
           transGlobalsMap(programPath);
-          // 处理this表达式
+          // 处理this表达式（包含了this.setData的处理）
           transFnCallThisExpression(componentInstancePath);
           // 将Component的对象API转换为funciton组合API
           let newNodeArr = transOptions2Composition(

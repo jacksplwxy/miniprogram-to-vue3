@@ -5,7 +5,8 @@ var app = getApp()
 Page({
   data: {
     feed: [],
-    feed_length: 0
+    feed_length: 0,
+    b:[2,3,4]
   },
   //事件处理函数
   bindItemTap: function() {

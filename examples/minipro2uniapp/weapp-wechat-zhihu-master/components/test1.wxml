@@ -1,0 +1,7 @@
+<!--components/test1.wxml-->
+<view style="font-size: 20px;">
+  <view>{{a}}</view>
+  <view wx:for="{{b}}" wx:key="*this">
+  <view>{{item}}</view>
+  </view>
+</view>

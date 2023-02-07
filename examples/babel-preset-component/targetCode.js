@@ -1,7 +1,8 @@
+import { attached, ready } from "@dcloudio/uni-app";
 import { reactive } from "vue";
-import state5 from '././state';
-import { state6 } from '';
-import * as state7 from '';
+import state5 from "././state";
+import { state6 } from "";
+import * as state7 from "";
 const _state = 1;
 let state1 = 2;
 function state3() {}
@@ -14,14 +15,69 @@ function _toastHidden() {
 const state = reactive({
   toastShow: true,
   userInfo: {
-    'class': 1,
-    'star': 0
+    class: 1,
+    star: 0
   }
 });
+const props = defineProps({
+  // myProperty: {
+  //   // 属性名
+  //   type: String,
+  //   value: "",
+  // },
+  // myProperty2: String, // 简化的定义方式
+  // min: {
+  //   type: Number,
+  //   value: 0,
+  // },
+  min: {
+    type: Number,
+    value: 0,
+    observer: function (newVal, oldVal) {
+      // 属性值变化时执行
+    }
+  },
+  lastLeaf: {
+    // 这个属性可以是 Number 、 String 、 Boolean 三种类型中的一种
+    type: [String, Object, Number],
+    value: 0
+  }
+});
+watch([numberA,  numberB], function (numberA, numberB) {
+  // 在 numberA 或者 numberB 被设置时，执行这个函数
+  state.sum = numberA + numberB;
+});
+watch([coupon], function (coupon) {
+  console.log(coupon);
+});
+let behaviors = [];
+let lifetimes = {
+  // 生命周期函数，可以为函数，或一个在 methods 段中定义的方法名
+  attached: function () {},
+  moved: function () {},
+  detached: function () {}
+};
+attached(function () {});
+ready(function () {});
+let pageLifetimes = {
+  // 组件所在页面的生命周期函数
+  show: function () {},
+  hide: function () {},
+  resize: function () {}
+};
+let methods = {
+  onMyButtonTap: function () {},
+  // 内部方法建议以下划线开头
+  _myPrivateMethod: function () {
+    // 这里将 data.A[0].B 设为 'myPrivateData'
+    state.A[0].B = "myPrivateData";
+  },
+  _propertyChange: function (newVal, oldVal) {}
+};
 let _state4 = null;
 let state4 = {
-  test1: '1',
-  test2: '2'
+  test1: "1",
+  test2: "2"
 };
 let a1 = () => {
   let a = 123;
@@ -71,7 +127,7 @@ let onHide = res => {
 };
 function gotoRank() {
   uni.navigateTo({
-    url: '../rank/rank'
+    url: "../rank/rank"
   });
 }
 function onShareAppMessage(res) {

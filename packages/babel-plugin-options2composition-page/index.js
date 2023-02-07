@@ -179,7 +179,7 @@ const plugin = declare((api, options = {}, dirname) => {
             let dependency = createImportDeclaration(["reactive"], "vue");
             program.node.body.unshift(dependency);
             // 创建reactive
-            let reactiveNode = creatReactive(t, item.value);
+            let reactiveNode = creatReactive(item.value);
             newNodeArr.unshift(reactiveNode);
           }
           // 处理Page({test:any})
