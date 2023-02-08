@@ -52,9 +52,27 @@ Component({
 
   lifetimes: {
     // 生命周期函数，可以为函数，或一个在 methods 段中定义的方法名
-    attached: function () {},
-    moved: function () {},
-    detached: function () {},
+    attached: function () {
+      this.setData({
+        a:1
+      })
+      console.log(this.data.userInfo)
+    },
+    moved: function () {
+      const that=this
+      test()
+      function test(){
+        this.setData({
+          a:1
+        })
+        that.setData({
+          a:2
+        })
+        that.onMyButtonTap()
+        console.log(that.data.userInfo)
+      }
+    },
+    detached: function () {console.log(3)},
   },
 
   // 生命周期函数，可以为函数，或一个在 methods 段中定义的方法名
@@ -64,7 +82,20 @@ Component({
   pageLifetimes: {
     // 组件所在页面的生命周期函数
     show: function () {},
-    hide: function () {},
+    hide: function () {
+      const that=this
+      test()
+      function test(){
+        this.setData({
+          a:1
+        })
+        that.setData({
+          a:2
+        })
+        that.onMyButtonTap()
+        console.log(that.data.userInfo)
+      }
+    },
     resize: function () {},
   },
 

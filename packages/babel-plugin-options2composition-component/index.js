@@ -5,7 +5,6 @@ const {
   getPageTypeInstancePath,
   createImportDeclaration,
   createFnCallExpressionStatement,
-  renameDeclarationPageParam,
   transGlobalsMap,
   setScopeBindingUnique,
   geneUniqNameBaseonList,
@@ -15,6 +14,7 @@ const {
   pathFatherScopeIsPro,
   transSetData,
   transFnCallThisExpression,
+  getCompositionNodeFromProperties,
 } = require("../common/utils-busi/traverse");
 
 const plugin = declare((api, options = {}, dirname) => {
@@ -43,29 +43,80 @@ const plugin = declare((api, options = {}, dirname) => {
     ready: "CALLFN",
     moved: "CALLFN",
     detached: "CALLFN",
+    error: "CALLFN",
     relations: "RELATIONS",
     externalClasses: "EXTERNALCLASSES",
     options: "OPTIONS",
     lifetimes: "LIFETIMES",
     pageLifetimes: "PAGELIFETIMES",
+    show: "PAGELIFETIMES-SHOW",
+    hide: "CALLFN-PAGELIFETIMES-SHOW",
+    resize: "CALLFN-PAGELIFETIMES-SHOW",
   };
 
-  // 如果作用域中存在对关键词（配置项关键词、Component参数、全局对象关键词（包括映射后的））的声明，则重命名这些声明，避免与关键词冲突
-  function renameDeclarationKeyWord(path) {
+  // PageLifetimes中生命周期转换关系
+  const PageLifetimesMap = {
+    show: "onShow",
+    hide: "onHide",
+    resize: "onResize",
+  };
+
+  // 获取Component中lifetimes、pageLifetimes、methods下的属性列表
+  function getInstanceSpecKeyPropsArr(componentInstancePath) {
+    let arr = [];
+    componentInstancePath.get("properties").forEach((nodePath) => {
+      let name = nodePath.node.key.name || nodePath.node.key.value;
+      switch (name) {
+        case "lifetimes":
+          break;
+        case "pageLifetimes":
+          break;
+        case "methods":
+          break;
+      }
+    });
+    return arr;
+  }
+
+  /**
+   * 如果作用域中存在对关键词（配置项关键词、Component参数、全局对象关键词（映射后的））的声明，则重命名这些声明，避免与关键词冲突
+   * @param {*} path
+   * @param {*} componentInstancePropArr Component的直接属性
+   * @param {*} componentInstancePropArr Component的特殊属性下的属性
+   */
+  function renameDeclarationKeyWord(
+    path,
+    componentInstancePropArr,
+    instanceSpecKeyPropsArr
+  ) {
     // 关键词集合
     let newBindingList = {};
     // 收集关键词：配置项关键词
-    newBindingList[config.stateKeyWord] = true;
-    newBindingList[config.propsKeyWord] = true;
-    // 收集关键词：Component参数类型
+    for (let key in config) {
+      // vue3关键词（映射后的）
+      if (key === "vue3Api") {
+        for (let key in config.vue3Api) {
+          newBindingList[config.vue3Api[key]] = true;
+        }
+      }
+      // 全局对象关键词（映射后的）
+      else if (key === "globalsMap") {
+        for (let key in config.globalsMap) {
+          newBindingList[config.globalsMap[key]] = true;
+        }
+      } else {
+        newBindingList[config[key]] = true;
+      }
+    }
+    // 收集关键词：Component预设参数类型
     for (let key in ComponentParamType) {
       newBindingList[key] = true;
     }
-    // 收集关键词：全局对象关键词（包括映射后的）
-    for (let key in config.globalsMap) {
+    // 收集关键词：Component实际参数和特殊属性下的参数
+    [...componentInstancePropArr, ...instanceSpecKeyPropsArr].forEach((key) => {
       newBindingList[key] = true;
-      newBindingList[config.globalsMap[key]] = true;
-    }
+    });
+
     // 声明重命名
     setScopeBindingUnique(path.scope, newBindingList);
   }
@@ -107,7 +158,9 @@ const plugin = declare((api, options = {}, dirname) => {
           }
           //如果存在observer
           else if (itemPath.get("key").node.name === observerKeyWord) {
-            console.log("暂不支持properties的observer属性转换，请手工移入watch监听器中");
+            console.log(
+              "暂不支持properties的observer属性转换，请手工移入watch监听器中"
+            );
           }
         });
 
@@ -119,32 +172,62 @@ const plugin = declare((api, options = {}, dirname) => {
     return t.objectExpression(properties);
   }
 
-   // 将小程序Observers转换vue3格式
-  function transObservers(objectExpressionPath){
-    let newNodes=[]
+  // 将小程序Observers转换vue3格式
+  function transObservers(objectExpressionPath) {
+    let newNodes = [];
     //将xx(){} → watch([name, age],([name, age])=>{})
     let propertiesPath = objectExpressionPath.get("properties");
-    propertiesPath.forEach(objectPropertyPath=>{
-      const watchKeyWord='watch'
-      let arguments = []
-      let argument1=t.arrayExpression(objectPropertyPath.get('key').node.value.split(',').map(name=>{
-        return t.identifier(name)
-      }));
-      arguments.push(argument1)
-      let argument2
-      if(objectPropertyPath.isObjectProperty()){
-        argument2=objectPropertyPath.get('value').node
-      }else if(objectPropertyPath.isObjectMethod()){
-        let node=objectPropertyPath.node
-        argument2=t.functionExpression(t.identifier(node.key.value),node.params, node.body, node.generator, node.async);
-      }else{
-        console.log('此处存在未处理的情况',objectPropertyPath)
+    propertiesPath.forEach((objectPropertyPath) => {
+      let arguments = [];
+      let argument1 = t.arrayExpression(
+        objectPropertyPath
+          .get("key")
+          .node.value.split(",")
+          .map((name) => {
+            return t.identifier(name);
+          })
+      );
+      arguments.push(argument1);
+      let argument2;
+      if (objectPropertyPath.isObjectProperty()) {
+        argument2 = objectPropertyPath.get("value").node;
+      } else if (objectPropertyPath.isObjectMethod()) {
+        let node = objectPropertyPath.node;
+        argument2 = t.functionExpression(
+          t.identifier(node.key.value),
+          node.params,
+          node.body,
+          node.generator,
+          node.async
+        );
+      } else {
+        console.log("此处存在未处理的情况", objectPropertyPath);
       }
-      arguments.push(argument2)
-      let fnCallExpStmt=t.expressionStatement(t.callExpression(t.identifier(watchKeyWord), arguments))
-      newNodes.push(fnCallExpStmt)
-    })
-    return newNodes
+      arguments.push(argument2);
+      let fnCallExpStmt = t.expressionStatement(
+        t.callExpression(t.identifier(config.vue3Api.watch), arguments)
+      );
+      newNodes.push(fnCallExpStmt);
+    });
+    return newNodes;
+  }
+
+  // 拿到lifetimes中的声明的生命周期数组
+  function getLifetimesDela(properties) {
+    let array = [];
+    properties.some((path) => {
+      let name = path.node.key.name || path.node.key.value;
+      if (path.isObjectProperty() && ComponentParamType[name] === "LIFETIMES") {
+        path
+          .get("value")
+          .get("properties")
+          .forEach((objProPath) => {
+            array.push(objProPath.node.key.name || objProPath.node.key.value);
+          });
+        return true;
+      }
+    });
+    return array;
   }
 
   /**
@@ -156,14 +239,21 @@ const plugin = declare((api, options = {}, dirname) => {
   function transOptions2Composition(ObjectExpressionPath, scope) {
     let newNodeArr = [];
     let componentParamDependArr = [];
+    let lifeTimesArr = getLifetimesDela(ObjectExpressionPath.get("properties"));
     ObjectExpressionPath.get("properties").forEach((nodePath) => {
       let item = nodePath.node;
+      // ObjectProperty的key可能是Identifier | Literal
+      let name = item.key.name || item.key.value;
       // 处理Component({test(){}})
       if (nodePath.isObjectMethod()) {
-        if (ComponentParamType[item.key.name] === "CALLFN") {
-          componentParamDependArr.push(item.key.name);
+        if (ComponentParamType[name] === "CALLFN") {
+          // 被lifetimes覆盖，不处理
+          if (lifeTimesArr.includes(name)) {
+            return;
+          }
+          componentParamDependArr.push(name);
           const newNode = createFnCallExpressionStatement(
-            t.identifier(generateUid(scope, item.key.name)),
+            t.identifier(name),
             {
               key: null,
               params: item.params,
@@ -175,26 +265,21 @@ const plugin = declare((api, options = {}, dirname) => {
           );
           newNodeArr.push(newNode);
         } else {
-          const newNode = t.functionDeclaration(
-            t.identifier(generateUid(scope, item.key.name)),
-            item.params,
-            item.body,
-            item.generator,
-            item.async
-          );
-          newNodeArr.push(newNode);
+          newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
         }
       }
       // 处理Component({test:xxx})
       else if (nodePath.isObjectProperty()) {
         // 处理Component({test: function () {}})
-        // ObjectProperty的key可能是Identifier | Literal
-        let name = item.key.name || item.key.value;
         if (item.value.type === "FunctionExpression") {
           if (ComponentParamType[name] === "CALLFN") {
-            componentParamDependArr.push(item.key.name);
+            // 被lifetimes覆盖，不处理
+            if (lifeTimesArr.includes(name)) {
+              return;
+            }
+            componentParamDependArr.push(name);
             const newNode = createFnCallExpressionStatement(
-              t.identifier(generateUid(scope, name)),
+              t.identifier(name),
               {
                 key: null,
                 params: item.value.params,
@@ -206,22 +291,19 @@ const plugin = declare((api, options = {}, dirname) => {
             );
             newNodeArr.push(newNode);
           } else {
-            const newNode = t.functionDeclaration(
-              t.identifier(generateUid(scope, name)),
-              item.value.params,
-              item.value.body,
-              item.value.generator,
-              item.value.async
-            );
-            newNodeArr.push(newNode);
+            newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
           }
         }
         // 处理Component({test:()=>{}})
         else if (item.value.type === "ArrowFunctionExpression") {
           if (ComponentParamType[name] === "CALLFN") {
-            componentParamDependArr.push(item.key.name);
+            // 被lifetimes覆盖，不处理
+            if (lifeTimesArr.includes(name)) {
+              return;
+            }
+            componentParamDependArr.push(name);
             const newNode = createFnCallExpressionStatement(
-              t.identifier(generateUid(scope, name)),
+              t.identifier(name),
               {
                 params: item.value.params,
                 body: item.value.body,
@@ -231,17 +313,7 @@ const plugin = declare((api, options = {}, dirname) => {
             );
             newNodeArr.push(newNode);
           } else {
-            const newNode = t.variableDeclaration("let", [
-              t.variableDeclarator(
-                t.identifier(generateUid(scope, name)),
-                t.arrowFunctionExpression(
-                  item.value.params,
-                  item.value.body,
-                  item.value.async
-                )
-              ),
-            ]);
-            newNodeArr.push(newNode);
+            newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
           }
         }
         // 处理Component({data:{}})
@@ -265,30 +337,85 @@ const plugin = declare((api, options = {}, dirname) => {
           }
           // 处理Component({observers:{}})
           else if (ComponentParamType[name] === "WATCH") {
+            // 引入依赖
+            let program = scope.getProgramParent().path;
+            let dependency = createImportDeclaration(
+              [config.vue3Api.watch],
+              "vue"
+            );
+            program.node.body.unshift(dependency);
             let newNode = transObservers(nodePath.get("value"));
             newNodeArr.push(...newNode);
           }
+          // 处理Component({lifetimes:{}})
+          else if (ComponentParamType[name] === "LIFETIMES") {
+            nodePath
+              .get("value")
+              .get("properties")
+              .forEach((objectPropertyPath) => {
+                let newNode = getCompositionNodeFromProperties(
+                  objectPropertyPath,
+                  scope
+                );
+                newNodeArr.push(newNode);
+              });
+          }
+          // 处理Component({pageLifetimes:{}})
+          else if (ComponentParamType[name] === "PAGELIFETIMES") {
+            nodePath
+              .get("value")
+              .get("properties")
+              .forEach((objectPropertyPath) => {
+                let identifierName = objectPropertyPath.node.key.name;
+                if (PageLifetimesMap[identifierName]) {
+                  objectPropertyPath.node.key.name =
+                    PageLifetimesMap[identifierName];
+                }
+                let stringLiteralName = objectPropertyPath.node.key.value;
+                if (PageLifetimesMap[stringLiteralName]) {
+                  objectPropertyPath.node.key.value =
+                    PageLifetimesMap[stringLiteralName];
+                }
+                let newNode = getCompositionNodeFromProperties(
+                  objectPropertyPath,
+                  scope
+                );
+                newNodeArr.push(newNode);
+              });
+          }
+          // 处理Component({methods:{}})
+          else if (ComponentParamType[name] === "METHODS") {
+            nodePath
+              .get("value")
+              .get("properties")
+              .forEach((objectPropertyPath) => {
+                let newNode = getCompositionNodeFromProperties(
+                  objectPropertyPath,
+                  scope
+                );
+                newNodeArr.push(newNode);
+              });
+          }
           // 处理Component({test:any})
           else {
-            let newNode = t.variableDeclaration("let", [
-              t.VariableDeclarator(
-                t.Identifier(generateUid(scope, name)),
-                item.value
-              ),
-            ]);
-            newNodeArr.push(newNode);
+            newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
           }
+        }
+        //  处理Component({behaviors:[]})
+        else if (
+          item.value.type === "ArrayExpression" &&
+          ComponentParamType[name] === "MIXINS"
+        ) {
+          console.log(
+            "behaviors可以翻译为vue中的 “mixins”，由于这是违背设计原则的特性，暂不处理"
+          );
         }
         // 其他未考虑到的情况（暂定为赋值）
         else {
-          let newNode = t.variableDeclaration("let", [
-            t.VariableDeclarator(
-              t.Identifier(generateUid(scope, name)),
-              item.value
-            ),
-          ]);
-          newNodeArr.push(newNode);
+          newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
         }
+      } else {
+        newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
       }
     });
     // 引入依赖
@@ -317,9 +444,13 @@ const plugin = declare((api, options = {}, dirname) => {
             throw new Error("get Component instance error");
           }
           // 将全局作用域中冲突的已有的申明进行重新命名，为关键词转换为组合API腾出标识符
-          renameDeclarationKeyWord(programPath);
-          // 将全局作用域中已有的申明进行重新命名，为Component参数转换为组合API腾出标识符
-          renameDeclarationPageParam(programPath, componentInstancePath);
+          renameDeclarationKeyWord(
+            programPath,
+            componentInstancePath.get("properties").map((nodePath) => {
+              return nodePath.node.key.name || nodePath.node.key.value;
+            }),
+            getInstanceSpecKeyPropsArr(componentInstancePath)
+          );
           // 转换全局对象关键词
           transGlobalsMap(programPath);
           // 处理this表达式（包含了this.setData的处理）

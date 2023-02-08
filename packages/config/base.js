@@ -3,9 +3,13 @@ const config = {
   stateKeyWord: "state",
   // 将小程序properties转换为defineProps的赋值申明变量名称
   propsKeyWord: "props",
+  // vue3的关键词
+  vue3Api: {
+    watchKeyWord: "wacth",
+  },
   // 全局对象映射关系表
   globalsMap: {
-    wx: "uni",  // wx映射为uni
+    wx: "uni", // wx映射为uni
   },
 };
 

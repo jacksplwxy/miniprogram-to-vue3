@@ -120,14 +120,6 @@ function createFnCallExpressionStatement(
   return t.expressionStatement(expression);
 }
 
-// 将全局作用域中冲突的已有的申明进行重新命名，为Page参数转换为组合API腾出标识符
-function renameDeclarationPageParam(programPath, pageInstancePath) {
-  let newBindingList = {};
-  pageInstancePath.get("properties").forEach((nodePath) => {
-    newBindingList[nodePath.node.key.name] = true;
-  });
-  setScopeBindingUnique(programPath.scope, newBindingList);
-}
 
 // 转换全局对象关键词
 function transGlobalsMap(programPath) {
@@ -325,11 +317,80 @@ function transThisObj2NoByRule(thisPath) {
   }
 }
 
+/**
+ * 从对象属性中提取符合Composition格式的新节点（不处理关键词）
+ * @param {*} propertyPath 对象的属性path
+ * @param {*} scope 转换后需要避免与scope作用域出现申明冲突
+ * @returns 节点
+ */
+function getCompositionNodeFromProperties(propertyPath, scope) {
+  let newNode;
+  let item = propertyPath.node;
+  // ObjectProperty的key可能是Identifier | Literal
+  let name = item.key.name || item.key.value;
+  // 处理Component({any(){}})
+  if (propertyPath.isObjectMethod()) {
+    newNode = t.functionDeclaration(
+      t.identifier(name),
+      item.params,
+      item.body,
+      item.generator,
+      item.async
+    );
+  }
+  // 处理Component({test:xxx})
+  else if (propertyPath.isObjectProperty()) {
+    // 处理Component({test: function () {}})
+    if (item.value.type === "FunctionExpression") {
+      newNode = t.functionDeclaration(
+        t.identifier(name),
+        item.value.params,
+        item.value.body,
+        item.value.generator,
+        item.value.async
+      );
+    }
+    // 处理Component({test:()=>{}})
+    else if (item.value.type === "ArrowFunctionExpression") {
+      newNode = t.variableDeclaration("let", [
+        t.variableDeclarator(
+          t.identifier(name),
+          t.arrowFunctionExpression(
+            item.value.params,
+            item.value.body,
+            item.value.async
+          )
+        ),
+      ]);
+    }
+    // 处理Component({any:any})
+    else if (item.value.type === "ObjectExpression") {
+      newNode = t.variableDeclaration("let", [
+        t.VariableDeclarator(
+          t.Identifier(name),
+          item.value
+        ),
+      ]);
+    }
+    // 其他未考虑到的情况（暂定为赋值）
+    else {
+      newNode = t.variableDeclaration("let", [
+        t.VariableDeclarator(
+          t.Identifier(name),
+          item.value
+        ),
+      ]);
+    }
+  } else {
+    console.log("此处存在未处理的情况");
+  }
+  return newNode;
+}
+
 module.exports = {
   getPageTypeInstancePath,
   createImportDeclaration,
   createFnCallExpressionStatement,
-  renameDeclarationPageParam,
   transGlobalsMap,
   setScopeBindingUnique,
   geneUniqNameBaseonList,
@@ -339,4 +400,5 @@ module.exports = {
   pathFatherScopeIsPro,
   transSetData,
   transFnCallThisExpression,
+  getCompositionNodeFromProperties,
 };

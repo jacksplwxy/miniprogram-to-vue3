@@ -1,5 +1,6 @@
-import { attached, ready } from "@dcloudio/uni-app";
+import { ready } from "@dcloudio/uni-app";
 import { reactive } from "vue";
+import { watch } from "vue";
 import state5 from "././state";
 import { state6 } from "";
 import * as state7 from "";
@@ -50,30 +51,46 @@ watch([numberA,  numberB], function (numberA, numberB) {
 watch([coupon], function (coupon) {
   console.log(coupon);
 });
-let behaviors = [];
-let lifetimes = {
-  // 生命周期函数，可以为函数，或一个在 methods 段中定义的方法名
-  attached: function () {},
-  moved: function () {},
-  detached: function () {}
-};
-attached(function () {});
+function attached() {
+  state.a = 1;
+  console.log(state.userInfo);
+}
+function moved() {
+  const that = this;
+  test();
+  function test() {
+    this.setData({
+      a: 1
+    });
+    state.a = 2;
+    onMyButtonTap();
+    console.log(state.userInfo);
+  }
+}
+function detached() {
+  console.log(3);
+}
 ready(function () {});
-let pageLifetimes = {
-  // 组件所在页面的生命周期函数
-  show: function () {},
-  hide: function () {},
-  resize: function () {}
-};
-let methods = {
-  onMyButtonTap: function () {},
-  // 内部方法建议以下划线开头
-  _myPrivateMethod: function () {
-    // 这里将 data.A[0].B 设为 'myPrivateData'
-    state.A[0].B = "myPrivateData";
-  },
-  _propertyChange: function (newVal, oldVal) {}
-};
+function onShow() {}
+function onHide() {
+  const that = this;
+  test();
+  function test() {
+    this.setData({
+      a: 1
+    });
+    state.a = 2;
+    onMyButtonTap();
+    console.log(state.userInfo);
+  }
+}
+function onResize() {}
+function onMyButtonTap() {}
+function _myPrivateMethod() {
+  // 这里将 data.A[0].B 设为 'myPrivateData'
+  state.A[0].B = "myPrivateData";
+}
+function _propertyChange(newVal, oldVal) {}
 let _state4 = null;
 let state4 = {
   test1: "1",

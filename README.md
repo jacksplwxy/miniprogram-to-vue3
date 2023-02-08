@@ -119,7 +119,7 @@ onShareAppMessage(function (res) {});
 
 ## 进度：
 
-目前只能转换指定 Page，不支持 Component、APP 类型以及依赖的 js 的文件转换，待成熟后将支持自动翻译整个项目
+目前只能转换指定 Page、Component，不支持 APP 类型以及依赖的 js 的文件转换，待成熟后将支持自动翻译整个项目
 
 
 
@@ -130,7 +130,7 @@ onShareAppMessage(function (res) {});
 
 ## 注意事项：
 
-- 工具并不成熟，建议转换后再检查代码是否正确
+- 由于js代码的灵活性，很难保证转换后的代码完全满足需求，建议转换后再检查代码的准确性
 
 ## License
 

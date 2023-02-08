@@ -5,7 +5,6 @@ const {
   getPageTypeInstancePath,
   createImportDeclaration,
   createFnCallExpressionStatement,
-  renameDeclarationPageParam,
   transGlobalsMap,
   setScopeBindingUnique,
   geneUniqNameBaseonList,
@@ -14,6 +13,7 @@ const {
   pathFatherScopeIsPro,
   transSetData,
   transFnCallThisExpression,
+  getCompositionNodeFromProperties,
 } = require("../common/utils-busi/traverse");
 // 一、将Page 选项中的方法转换为function方法，对于指定方法，有固定转换关系；
 // 二、方法的调用需消除this
@@ -55,20 +55,34 @@ const plugin = declare((api, options = {}, dirname) => {
   };
 
   // 如果作用域中存在对关键词（配置项关键词、Page参数、全局对象关键词（包括映射后的））的声明，则重命名这些声明，避免与关键词冲突
-  function renameDeclarationKeyWord(path) {
+  function renameDeclarationKeyWord(path, pageInstancePropArr) {
     // 关键词集合
     let newBindingList = {};
     // 收集关键词：配置项关键词
-    newBindingList[config.stateKeyWord] = true;
-    // 收集关键词：Page参数类型
+    for (let key in config) {
+      // vue3关键词（映射后的）
+      if (key === "vue3Api") {
+        for (let key in config.vue3Api) {
+          newBindingList[config.vue3Api[key]] = true;
+        }
+      }
+      // 全局对象关键词（映射后的）
+      else if (key === "globalsMap") {
+        for (let key in config.globalsMap) {
+          newBindingList[config.globalsMap[key]] = true;
+        }
+      } else {
+        newBindingList[config[key]] = true;
+      }
+    }
+    // 收集关键词：Page预设参数类型
     for (let key in PageParamType) {
       newBindingList[key] = true;
     }
-    // 收集关键词：全局对象关键词（包括映射后的）
-    for (let key in config.globalsMap) {
+    // 收集关键词：Page实际参数
+    pageInstancePropArr.forEach((key) => {
       newBindingList[key] = true;
-      newBindingList[config.globalsMap[key]] = true;
-    }
+    });
     // 声明重命名
     setScopeBindingUnique(path.scope, newBindingList);
   }
@@ -84,12 +98,14 @@ const plugin = declare((api, options = {}, dirname) => {
     let pageParamDependArr = [];
     ObjectExpressionPath.get("properties").forEach((nodePath) => {
       let item = nodePath.node;
+      // ObjectProperty的key可能是Identifier | Literal
+      let name = item.key.name || item.key.value;
       // 处理Page({test(){}})
       if (nodePath.isObjectMethod()) {
-        if (PageParamType[item.key.name] === "CALLFN") {
-          pageParamDependArr.push(item.key.name);
+        if (PageParamType[name] === "CALLFN") {
+          pageParamDependArr.push(name);
           const newNode = createFnCallExpressionStatement(
-            t.identifier(generateUid(scope, item.key.name)),
+            t.identifier(name),
             {
               key: null,
               params: item.params,
@@ -101,26 +117,17 @@ const plugin = declare((api, options = {}, dirname) => {
           );
           newNodeArr.push(newNode);
         } else {
-          const newNode = t.functionDeclaration(
-            t.identifier(generateUid(scope, item.key.name)),
-            item.params,
-            item.body,
-            item.generator,
-            item.async
-          );
-          newNodeArr.push(newNode);
+          newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
         }
       }
       // 处理Page({test:xxx})
       else if (nodePath.isObjectProperty()) {
         // 处理Page({test: function () {}})
-        // ObjectProperty的key可能是Identifier | Literal
-        let name = item.key.name || item.key.value;
         if (item.value.type === "FunctionExpression") {
           if (PageParamType[name] === "CALLFN") {
-            pageParamDependArr.push(item.key.name);
+            pageParamDependArr.push(name);
             const newNode = createFnCallExpressionStatement(
-              t.identifier(generateUid(scope, name)),
+              t.identifier(name),
               {
                 key: null,
                 params: item.value.params,
@@ -132,22 +139,15 @@ const plugin = declare((api, options = {}, dirname) => {
             );
             newNodeArr.push(newNode);
           } else {
-            const newNode = t.functionDeclaration(
-              t.identifier(generateUid(scope, name)),
-              item.value.params,
-              item.value.body,
-              item.value.generator,
-              item.value.async
-            );
-            newNodeArr.push(newNode);
+            newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
           }
         }
         // 处理Page({test:()=>{}})
         else if (item.value.type === "ArrowFunctionExpression") {
           if (PageParamType[name] === "CALLFN") {
-            pageParamDependArr.push(item.key.name);
+            pageParamDependArr.push(name);
             const newNode = createFnCallExpressionStatement(
-              t.identifier(generateUid(scope, name)),
+              t.identifier(name),
               {
                 params: item.value.params,
                 body: item.value.body,
@@ -157,17 +157,7 @@ const plugin = declare((api, options = {}, dirname) => {
             );
             newNodeArr.push(newNode);
           } else {
-            const newNode = t.variableDeclaration("let", [
-              t.variableDeclarator(
-                t.identifier(generateUid(scope, name)),
-                t.arrowFunctionExpression(
-                  item.value.params,
-                  item.value.body,
-                  item.value.async
-                )
-              ),
-            ]);
-            newNodeArr.push(newNode);
+            newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
           }
         }
         // 处理Page({data:{}})
@@ -184,24 +174,12 @@ const plugin = declare((api, options = {}, dirname) => {
           }
           // 处理Page({test:any})
           else {
-            let newNode = t.variableDeclaration("let", [
-              t.VariableDeclarator(
-                t.Identifier(generateUid(scope, name)),
-                item.value
-              ),
-            ]);
-            newNodeArr.push(newNode);
+            newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
           }
         }
         // 其他未考虑到的情况（暂定为赋值）
         else {
-          let newNode = t.variableDeclaration("let", [
-            t.VariableDeclarator(
-              t.Identifier(generateUid(scope, name)),
-              item.value
-            ),
-          ]);
-          newNodeArr.push(newNode);
+          newNodeArr.push(getCompositionNodeFromProperties(nodePath, scope));
         }
       }
     });
@@ -228,9 +206,12 @@ const plugin = declare((api, options = {}, dirname) => {
             throw new Error("get Page instance error");
           }
           // 将全局作用域中冲突的已有的申明进行重新命名，为关键词转换为组合API腾出标识符
-          renameDeclarationKeyWord(programPath);
-          // 将全局作用域中已有的申明进行重新命名，为Page参数转换为组合API腾出标识符
-          renameDeclarationPageParam(programPath, pageInstancePath);
+          renameDeclarationKeyWord(
+            programPath,
+            pageInstancePath.get("properties").map((nodePath) => {
+              return nodePath.node.key.name || nodePath.node.key.value;
+            })
+          );
           // 转换全局对象关键词
           transGlobalsMap(programPath);
           // 处理this表达式
