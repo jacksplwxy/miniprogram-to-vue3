@@ -1,6 +1,7 @@
 // 读取文件夹，并翻译程序
 const fs = require("fs");
 const path = require("path");
+const {isFile} =require("./common/utils");
 const posthtml = require("posthtml");
 const render = require("posthtml-render");
 const posthtmlWxml2unitemplate = require("../packages/posthtml-wxml2unitemplate/index");
@@ -8,13 +9,7 @@ const { transformFromAstSync } = require("@babel/core");
 const parser = require("@babel/parser");
 const babelPresetPage = require("../packages/babel-preset-page/index");
 
-// 是否是文件
-function isFile(filePath) {
-  try {
-    return fs.statSync(filePath).isFile();
-  } catch (e) {}
-  return false;
-}
+
 
 // 翻译一个小程序文件夹下的文件为vue3
 function generateVue3(filePath) {

@@ -1,6 +1,7 @@
 const fs = require("fs");
 const { createFile } = require("../packages/common/utils-base/file");
 const { generateVue3 } = require("./generateVue3");
+const { isDirectory } = require("./common/utils");
 
 // 将app.json下的所有pages进行翻译，并存放在一个新文件夹下
 function generateVue3Folder(jsonPath) {
@@ -48,13 +49,7 @@ function formatDate(time) {
   return y + "_" + MM + "_" + d + "_" + h + "_" + m + "_" + s;
 }
 
-// 是否是文件
-function isDirectory(path) {
-  try {
-    return fs.statSync(path).isDirectory();
-  } catch (e) {}
-  return false;
-}
+
 
 const inputPath = process.argv[2];
 // 执行翻译程序

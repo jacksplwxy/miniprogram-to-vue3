@@ -9,6 +9,7 @@
     "test": "tests"
   },
   "scripts": {
+    "build": "node ./src/index.js",
     "build:page": "node ./src/page.js",
     "build:js": "node ./src/js.js",
     "test": "echo \"Error: no test specified\" && exit 1"

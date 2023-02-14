@@ -1,4 +1,4 @@
-const { traverseModule } = require("../../src/traverseModule");
+const { traverseModule } = require("../../packages/babel-traverseModule/traverseModule");
 const path = require("path");
 const fs = require("fs");
 

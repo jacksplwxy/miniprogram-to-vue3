@@ -1,7 +1,10 @@
 const parser = require("@babel/parser");
 const traverse = require("@babel/traverse").default;
 const fs = require("fs");
+const { transformFromAstSync } = require("@babel/core");
 const path = require("path");
+const babelPresetEsm = require("../babel-preset-esm/index");
+
 
 class DependencyNode {
   constructor(path = "", imports = {}, exports = []) {
@@ -106,9 +109,14 @@ function traverseJsModule(curModulePath, dependencyGrapthNode, allModules) {
   });
   dependencyGrapthNode.path = curModulePath;
 
-  const ast = parser.parse(moduleFileContent, {
+  const parsedAst = parser.parse(moduleFileContent, {
     sourceType: "unambiguous",
     plugins: resolveBabelSyntaxtPlugins(curModulePath),
+  });
+
+  const { ast } = transformFromAstSync(parsedAst, moduleFileContent, {
+    ast: true,
+    presets: [[babelPresetEsm, {}]],
   });
 
   traverse(ast, {
@@ -193,9 +201,6 @@ function traverseModule(curModulePath) {
   return dependencyGraph;
 }
 
-module.exports ={
-    traverseModule
-}
-
-
-
+module.exports = {
+  traverseModule,
+};
