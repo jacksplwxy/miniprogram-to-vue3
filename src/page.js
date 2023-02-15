@@ -1,7 +1,7 @@
 const fs = require("fs");
 const { createFile } = require("../packages/common/utils-base/file");
 const { generateVue3 } = require("./generateVue3");
-const { isDirectory } = require("./common/utils");
+const { isDirectory } = require("../packages/common/utils-base/file");
 
 // 将app.json下的所有pages进行翻译，并存放在一个新文件夹下
 function generateVue3Folder(jsonPath) {

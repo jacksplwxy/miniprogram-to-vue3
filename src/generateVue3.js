@@ -1,7 +1,7 @@
 // 读取文件夹，并翻译程序
 const fs = require("fs");
 const path = require("path");
-const {isFile} =require("./common/utils");
+const {isFile} =require("../packages/common/utils-base/file");
 const posthtml = require("posthtml");
 const render = require("posthtml-render");
 const posthtmlWxml2unitemplate = require("../packages/posthtml-wxml2unitemplate/index");

@@ -1,14 +1,30 @@
 const fs = require("fs");
+const fse = require("fs-extra");
 
+// 是否是文件夹
+function isDirectory(path) {
+  try {
+    return fs.statSync(path).isDirectory();
+  } catch (e) {}
+  return false;
+}
+
+// 是否是文件
+function isFile(filePath) {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch (e) {}
+  return false;
+}
+
+// 创建文件，路径缺少目录的自动创建目录
 function createFile(filePath, data) {
   const dirCache = {};
-
   function writeFileByUser(filePath) {
     if (fs.existsSync(filePath)) {
     } else {
       mkdir(filePath);
     }
-
     fs.appendFile(filePath, data, "utf8", function (err) {
       if (err) {
         console.log(err);
@@ -16,7 +32,6 @@ function createFile(filePath, data) {
       }
     });
   }
-
   function mkdir(filePath) {
     const arr = filePath.split("/");
     let dir = arr[0];
@@ -32,6 +47,26 @@ function createFile(filePath, data) {
   writeFileByUser(filePath);
 }
 
+// 判断文件夹名是否存在（该方法可以被fs.existsSync替代）
+function isDirectoryExist(path) {
+  let result = fs.existsSync(path);
+  return result;
+}
+
+// 根据当前文件夹路径获得一个新文件夹名=旧文件夹名+"_copy"
+function getNewDirectoryName(path) {
+  const Postfix = "_copy";
+  let newDirectory = path + Postfix;
+  if (isDirectoryExist(newDirectory)) {
+    return getNewDirectoryName(newDirectory);
+  }
+  return newDirectory;
+}
+
 module.exports = {
+  isDirectory,
+  isFile,
   createFile,
+  isDirectoryExist,
+  getNewDirectoryName,
 };
