@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const { getNewDirectoryName } = require("../packages/common/utils-base/file");
 // const { createFile } = require("../packages/common/utils-base/file");
+const { generateMainjs } = require("./generateMainjs");
 const { generateAppvue } = require("./generateAppvue");
 const { generateVue3 } = require("./generateVue3");
 const { generateEsm } = require("./generateEsm");
@@ -36,7 +37,18 @@ if (isDirectory(inputPath)) {
     targetProjectPath
   );
   console.log("完成模板代码创建");
-  console.info("全局组件待注册。。。。");
+
+  generateMainjs(
+    path.resolve(targetProjectPath, "./src/main.js"),
+    jsonSourceCode.usingComponents || {}
+  ).then((code) => {
+    fs.writeFileSync(
+      path.resolve(targetProjectPath, "./src/main.js"),
+      code,
+      "utf8"
+    );
+    console.log("完成main.js的全局组件注册");
+  });
 
   /**
    * 小程序app.js拆分为App.vue + <script>export default</script>（https://juejin.cn/post/7009282373476941831），app.js字面量也要转换为组合式，属性和方法通过{}暴露出去。

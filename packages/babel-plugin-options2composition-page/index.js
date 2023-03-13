@@ -196,19 +196,19 @@ const plugin = declare((api, options = {}, dirname) => {
     return newNodeArr;
   }
 
-
-
   return {
     pre(file) {},
     visitor: {
       Program: {
         enter(programPath) {
+          // 处理getApp()表达式
+          transGetAppCallExpression(programPath);
           // 获取Page入参对象的path
           let pageInstancePath = getPageTypeInstancePath(programPath, "Page");
           if (!pageInstancePath) {
             // throw new Error("get Page instance error");
-            console.error('get Page instance error')
-            return 
+            console.error("get Page instance error");
+            return;
           }
           // 将全局作用域中冲突的已有的申明进行重新命名，为关键词转换为组合API腾出标识符
           renameDeclarationKeyWord(
@@ -219,8 +219,6 @@ const plugin = declare((api, options = {}, dirname) => {
           );
           // 转换全局对象关键词
           transGlobalsMap(programPath);
-          // 处理getApp()表达式
-          transGetAppCallExpression(programPath);
           // 处理this表达式
           transFnCallThisExpression(pageInstancePath);
           // 将Page的对象API转换为funciton组合API
