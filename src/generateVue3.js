@@ -11,7 +11,11 @@ const babelPresetPage = require("../packages/babel-preset-page/index");
 
 
 
-// 翻译一个小程序文件夹下的文件为vue3
+/**
+ * 翻译一个小程序文件夹下的文件为vue3
+ * @param {*} filePath 不带后缀的文件路径
+ * @returns 
+ */
 function generateVue3(filePath) {
   return new Promise(async (resolve, reject) => {
     if (isFile(filePath + ".wxml")) {
@@ -53,7 +57,7 @@ function generateVue3(filePath) {
       targetCode +=
         `\n<script setup>\n` + (await transJs(jsSourceCode)) + `\n</script>`;
       // 翻译wxss文件
-      targetCode += `\n<style>\n` + wxssSourceCode + `\n</style>`;
+      targetCode += `\n<style scoped>\n` + wxssSourceCode + `\n</style>`;
 
       resolve(targetCode, filePath);
     } else {

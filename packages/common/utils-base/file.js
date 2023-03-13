@@ -1,5 +1,6 @@
 const fs = require("fs");
 const fse = require("fs-extra");
+const { formatDate } = require("./time");
 
 // 是否是文件夹
 function isDirectory(path) {
@@ -17,7 +18,7 @@ function isFile(filePath) {
   return false;
 }
 
-// 创建文件，路径缺少目录的自动创建目录
+// 更新文件（没有则会创建），路径缺少目录的自动创建目录
 function createFile(filePath, data) {
   const dirCache = {};
   function writeFileByUser(filePath) {
@@ -53,9 +54,9 @@ function isDirectoryExist(path) {
   return result;
 }
 
-// 根据当前文件夹路径获得一个新文件夹名=旧文件夹名+"_copy"
+// 根据当前文件夹路径获得一个新文件夹名=旧文件夹名+"时间"
 function getNewDirectoryName(path) {
-  const Postfix = "_copy";
+  const Postfix = "_" + formatDate(new Date().getTime());
   let newDirectory = path + Postfix;
   if (isDirectoryExist(newDirectory)) {
     return getNewDirectoryName(newDirectory);

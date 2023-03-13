@@ -3,6 +3,8 @@ const config = {
   stateKeyWord: "state",
   // 将小程序properties转换为defineProps的赋值申明变量名称
   propsKeyWord: "props",
+  // 将小程序getApp()转换为import的赋值申明变量名称
+  getAppCallKeyWord: "app",
   // vue3的关键词
   vue3Api: {
     watchKeyWord: "wacth",

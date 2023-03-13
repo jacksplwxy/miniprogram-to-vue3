@@ -8,9 +8,8 @@
 
 ## 使用：
 
-- npm install // 安装依赖文件
-- npm run build:page 路径 // 将指定路径文件夹下的小程序文件（wxml、js、wxss）构建为.vue 文件。路径既可以是文件夹，也可以是 app.json，如果路径是文件夹，则只转换文件夹下的小程序文件；如果路径是 app.json 则转换当中 pages 配置的所有文件夹
-- npm run build:js 文件夹路径 // 将指定路径文件夹下的 js 文件模块由 commonjs 转换为 es 模块（vite 不支持 commonjs）
+- npm install 
+- npm run build  项目文件夹路径 
 
 ## 转换示例:
 - wxml转换前
@@ -101,15 +100,6 @@ function gotoRank() {
 onShareAppMessage(function (res) {});
 ```
 
-## 项目转换示例：
-
-- 由于工具的不完善，在转换前需要做一些手工操作：
-- 1、在网上找到知乎微信小程序源码并下载下来，作为待转换的项目：https://github.com/RebeccaHanjw/weapp-wechat-zhihu
-- 2、使用 npx degit dcloudio/uni-preset-vue#vite my-vue3-project 命令创建 Vue3/Vite 版 uniapp 模板（node 版本^14.18.0）
-- 3、为保证转换效果一致性，需将小程序的一些公用文件复制到 uniapp 目录下，例如小程序的app.wxss复制到uniapp中，并在main.js进行全局import引入，例如小程序的 utils、images、data 文件夹复制到 uniapp 的 src 文件夹中。另外，由于 vite 不支持 commonjs，需要将小程序的 commonjs 转换为 es 模块，可以通过本工具的命令行对文件夹下的 js 文件进行模块转换：npm run build:js D:/miniprogram-to-vue3/examples/minipro2uniapp/uniapp/src/data。
-- 4、执行转换小程序页面为 vue3 文件的命令行 npm run build D:/miniprogram-to-vue3/examples/minipro2uniapp/weapp-wechat-zhihu-master/pages/index/index，并生成 index.vue 文件
-- 5、将生成.vue 文件剪切到 uniapp 中，运行 uni 项目后即可看到生成的页面与微信小程序中保持一致。
-- 6、其他页面的转换与 5 一致即可（也可npm run build app.json路径进行多页面转换）
 
 ## 具体做了哪些转换？
 
@@ -126,6 +116,7 @@ onShareAppMessage(function (res) {});
 ## 原理：
 
 - wxml-compiler：wxml → posthtml-parser → AST → transform → new AST → posthtml-render → vue3/uniapp3 template
+- wxss-compiler：wxss → postcss-parser → AST → transform → new AST → postcss-render → vue3/uniapp3 style
 - wxjs-compiler：wxjs → @babel/parser → AST → transform → new AST → @babel/generator → vue3/uniapp3 script
 
 ## 注意事项：

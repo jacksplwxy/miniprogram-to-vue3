@@ -10,9 +10,6 @@
   },
   "scripts": {
     "build": "node ./src/project.js",
-    "build:project": "node ./src/project.js",
-    "build:page": "node ./src/page.js",
-    "build:js": "node ./src/js.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -46,6 +43,7 @@
     "fs-extra": "^11.1.0",
     "jest": "^26.6.3",
     "lodash": "^4.17.21",
+    "postcss": "^8.4.21",
     "posthtml": "^0.16.6",
     "reserved-words": "^0.1.2"
   },

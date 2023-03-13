@@ -120,7 +120,6 @@ function createFnCallExpressionStatement(
   return t.expressionStatement(expression);
 }
 
-
 // 转换全局对象关键词
 function transGlobalsMap(programPath) {
   programPath.traverse({
@@ -231,6 +230,33 @@ function transSetData(callExpression) {
     });
 
   return newNodeArr;
+}
+
+// 处理getApp()
+function transGetAppCallExpression(programPath) {
+  let hasImport = false;
+  programPath.traverse({
+    CallExpression(appPath) {
+      if (appPath.get("callee").node.name === "getApp") {
+        // 要确保path的作用域是program的作用域
+        if (appPath.scope === programPath.scope) {
+          if (!hasImport) {
+            let importDeclaration = t.importDeclaration(
+              [
+                t.importDefaultSpecifier(
+                  t.identifier(config.getAppCallKeyWord)
+                ),
+              ],
+              t.stringLiteral("@/App.vue")
+            );
+            programPath.node.body.unshift(importDeclaration);
+            hasImport = true;
+          }
+          appPath.replaceWith(t.Identifier(config.getAppCallKeyWord));
+        }
+      }
+    },
+  });
 }
 
 // 转换方法调用入参的this表达式为函数申明（包含了this.setData的处理）
@@ -366,19 +392,13 @@ function getCompositionNodeFromProperties(propertyPath, scope) {
     // 处理Component({any:any})
     else if (item.value.type === "ObjectExpression") {
       newNode = t.variableDeclaration("let", [
-        t.VariableDeclarator(
-          t.Identifier(name),
-          item.value
-        ),
+        t.VariableDeclarator(t.Identifier(name), item.value),
       ]);
     }
     // 其他未考虑到的情况（暂定为赋值）
     else {
       newNode = t.variableDeclaration("let", [
-        t.VariableDeclarator(
-          t.Identifier(name),
-          item.value
-        ),
+        t.VariableDeclarator(t.Identifier(name), item.value),
       ]);
     }
   } else {
@@ -400,5 +420,6 @@ module.exports = {
   pathFatherScopeIsPro,
   transSetData,
   transFnCallThisExpression,
+  transGetAppCallExpression,
   getCompositionNodeFromProperties,
 };

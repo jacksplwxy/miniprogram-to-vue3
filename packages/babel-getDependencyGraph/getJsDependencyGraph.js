@@ -188,7 +188,7 @@ function traverseJsModule(curModulePath, dependencyGrapthNode, allModules) {
   allModules[curModulePath] = dependencyGrapthNode;
 }
 
-function traverseModule(curModulePath) {
+function getJsDependencyGraph(curModulePath) {
   const dependencyGraph = {
     root: new DependencyNode(),
     allModules: {},
@@ -202,5 +202,5 @@ function traverseModule(curModulePath) {
 }
 
 module.exports = {
-  traverseModule,
+  getJsDependencyGraph,
 };
