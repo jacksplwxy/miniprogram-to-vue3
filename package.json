@@ -12,7 +12,6 @@
     "build": "node ./src/vue.js",
     "build:vue": "npm run build",
     "build:project": "node ./src/project.js"
-    
   },
   "repository": {
     "type": "git",
@@ -47,7 +46,10 @@
     "lodash": "^4.17.21",
     "postcss": "^8.4.21",
     "posthtml": "^0.16.6",
-    "reserved-words": "^0.1.2"
+    "reserved-words": "^0.1.2",
+    "posthtml-render": "^3.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    
+  }
 }

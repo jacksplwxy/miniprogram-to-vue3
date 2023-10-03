@@ -47,6 +47,9 @@ dependencies:
   posthtml:
     specifier: ^0.16.6
     version: registry.npmmirror.com/posthtml@0.16.6
+  posthtml-render:
+    specifier: ^3.0.0
+    version: registry.npmmirror.com/posthtml-render@3.0.0
   reserved-words:
     specifier: ^0.1.2
     version: registry.npmmirror.com/reserved-words@0.1.2
