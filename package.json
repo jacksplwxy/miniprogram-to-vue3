@@ -39,6 +39,7 @@
     "@babel/template": "^7.12.13",
     "@babel/traverse": "^7.13.13",
     "@babel/types": "^7.13.14",
+    "@babel/helper-plugin-utils": "^7.22.5",
     "babel-plugin-tester": "^10.0.0",
     "chalk": "^4.1.1",
     "fs-extra": "^11.1.0",
