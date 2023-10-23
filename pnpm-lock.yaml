@@ -32,6 +32,9 @@ dependencies:
   babel-plugin-tester:
     specifier: ^10.0.0
     version: registry.npmmirror.com/babel-plugin-tester@10.0.0(@babel/core@7.14.0)
+  babel-plugin-transform-commonjs:
+    specifier: ^1.1.6
+    version: registry.npmmirror.com/babel-plugin-transform-commonjs@1.1.6(@babel/core@7.14.0)
   chalk:
     specifier: ^4.1.1
     version: registry.npmmirror.com/chalk@4.1.1
@@ -1159,6 +1162,18 @@ packages:
       strip-indent: registry.npmmirror.com/strip-indent@3.0.0
     dev: false
 
+  registry.npmmirror.com/babel-plugin-transform-commonjs@1.1.6(@babel/core@7.14.0):
+    resolution: {integrity: sha512-nLPA5wR1LzYmJkYZSjIZVv5Fjqr+lBmgNCGCvUjHKnNGG1OX/kfWggUJECaowEW3D8SaLOyuOU2x4UQw6G5Rwg==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/babel-plugin-transform-commonjs/-/babel-plugin-transform-commonjs-1.1.6.tgz}
+    id: registry.npmmirror.com/babel-plugin-transform-commonjs/1.1.6
+    name: babel-plugin-transform-commonjs
+    version: 1.1.6
+    peerDependencies:
+      '@babel/core': '>=7'
+    dependencies:
+      '@babel/core': registry.npmmirror.com/@babel/core@7.14.0
+      '@babel/helper-plugin-utils': registry.npmmirror.com/@babel/helper-plugin-utils@7.22.5
+    dev: false
+
   registry.npmmirror.com/babel-preset-current-node-syntax@1.0.1(@babel/core@7.14.0):
     resolution: {integrity: sha512-M7LQ0bxarkxQoN+vz5aJPsLBn77n8QgTFmo8WK0/44auK2xlCXrYcUxHFxgU7qW5Yzw/CjmLRK2uJzaCd7LvqQ==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/babel-preset-current-node-syntax/-/babel-preset-current-node-syntax-1.0.1.tgz}
     id: registry.npmmirror.com/babel-preset-current-node-syntax/1.0.1
@@ -2091,6 +2106,7 @@ packages:
     resolution: {integrity: sha512-+xGQY0YyAWCnqy7Cd++hc2JqMYzlm0dG30Jd0beaA64sROr8C4nt8Yc9V5Ro3avlSUDTN0ulqP/VBKi1/lLygw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/growly/-/growly-1.3.0.tgz}
     name: growly
     version: 1.3.0
+    requiresBuild: true
     dev: false
     optional: true
 
@@ -2355,6 +2371,7 @@ packages:
     version: 2.2.1
     engines: {node: '>=8'}
     hasBin: true
+    requiresBuild: true
     dev: false
     optional: true
 
@@ -2457,6 +2474,7 @@ packages:
     name: is-wsl
     version: 2.2.0
     engines: {node: '>=8'}
+    requiresBuild: true
     dependencies:
       is-docker: registry.npmmirror.com/is-docker@2.2.1
     dev: false
@@ -4030,6 +4048,7 @@ packages:
     resolution: {integrity: sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/shellwords/-/shellwords-0.1.1.tgz}
     name: shellwords
     version: 0.1.1
+    requiresBuild: true
     dev: false
     optional: true
 
@@ -4527,6 +4546,7 @@ packages:
     name: uuid
     version: 8.3.2
     hasBin: true
+    requiresBuild: true
     dev: false
     optional: true
 
