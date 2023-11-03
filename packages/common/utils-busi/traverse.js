@@ -447,19 +447,7 @@ function transThisObj2NoByRule(thisPath) {
   }
 }
 
-// 在promgram中申明变量
-function decarePromvariables(promPath, variableArr) {
-  // 去重
-  variableArr = [...new Set(variableArr)];
-  variableArr.forEach((identifierName) => {
-    promPath.unshiftContainer(
-      "body",
-      t.variableDeclaration("let", [
-        t.VariableDeclarator(t.Identifier(identifierName)),
-      ])
-    );
-  });
-}
+
 
 /**
  * 从对象属性中提取符合Composition格式的新节点（不处理关键词）
@@ -542,5 +530,4 @@ module.exports = {
   getCompositionNodeFromProperties,
   getProScope,
   getAllThisProps,
-  decarePromvariables,
 };

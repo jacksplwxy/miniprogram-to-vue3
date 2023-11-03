@@ -16,7 +16,6 @@ const {
   transGetAppCallExpression,
   getCompositionNodeFromProperties,
   getAllThisProps,
-  decarePromvariables,
 } = require("../common/utils-busi/traverse");
 // 一、将Page 选项中的方法转换为function方法，对于指定方法，有固定转换关系；
 // 二、方法的调用需消除this
@@ -243,9 +242,7 @@ const plugin = declare((api, options = {}, dirname) => {
           transGetAppCallExpression(programPath);
           if (pageInstancePath) {
             // 处理this表达式
-            transFnCallThisExpression(pageInstancePath);
-            // 申明this的属性变量
-            decarePromvariables(programPath,Object.keys(allThisProps))
+            transFnCallThisExpression(pageInstancePath); 
             // 将Page的对象API转换为funciton组合API
             let newNodeArr = transOptions2Composition(
               pageInstancePath,

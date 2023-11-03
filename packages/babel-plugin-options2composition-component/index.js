@@ -17,7 +17,6 @@ const {
   transFnCallThisExpression,
   getCompositionNodeFromProperties,
   getAllThisProps,
-  decarePromvariables,
 } = require("../common/utils-busi/traverse");
 
 const plugin = declare((api, options = {}, dirname) => {
@@ -506,8 +505,6 @@ const plugin = declare((api, options = {}, dirname) => {
           if (componentInstancePath) {
             // 处理this表达式（包含了this.setData的处理）
             transFnCallThisExpression(componentInstancePath);
-            // 申明this的属性变量
-            decarePromvariables(programPath,Object.keys(allThisProps));
             // 将Component的对象API转换为funciton组合API
             let newNodeArr = transOptions2Composition(
               componentInstancePath,
